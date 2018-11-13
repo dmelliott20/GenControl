@@ -70,7 +70,11 @@ void loop()
         if (Clock.getHour(h12, PM) < 8 || Clock.getHour(h12, PM) > 19)
         {
          lcdupdatemodeline("Auto QT*");
-          //if its QT then execute this code
+                   //if its QT then execute this code
+          if (ReadPinDB(trigger) == LOW)
+          {
+            qtoveridemenu();
+          }
         }
         else
         {
@@ -565,6 +569,54 @@ void testmenu()
       if (!TestGenerator(900)) halt("Test Fail");
       break;
   }
+}
+
+void qtoveridemenu()
+{
+  int menupos = 1;
+  lcd.clear();
+  lcdupdateline(0, "Trigger During QT!");
+  lcdupdateline(1, "Switch to Full Auto?");
+  delay(500);
+  while (1) {
+    if (menupos == 1) {
+      lcdupdateline(2, ">Yes");
+    } else {
+      lcdupdateline(2, " Yes");
+    }
+    if (menupos == 2) {
+      lcdupdateline(3, ">No");
+    } else {
+      lcdupdateline(3, " No");
+    }
+    if (ReadPinDB(button_select) == LOW)
+    {
+      if (menupos == 2)
+      {
+        menupos = 1;
+      }
+      else
+      {
+        menupos++;
+      }
+      delay(500);
+    }
+    if (ReadPinDB(button_ok) == LOW)
+    {
+      break;
+    }
+  }
+  switch (menupos)
+  {
+    case 1:
+      mode = 2;
+      break;
+    case 2:
+      mode = 0;
+      break;
+  }
+  returnlcd();
+  delay(1000);
 }
 
 void returnlcd()
