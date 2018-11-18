@@ -13,6 +13,7 @@ unsigned int start = 38;
 unsigned int stopgen = 40;
 unsigned int output = 42;
 unsigned int trigger = 44;
+unsigned int presence = 45;
 unsigned int reset = 52;
 unsigned int button_select = 22;
 unsigned int button_ok = 24;
@@ -21,6 +22,7 @@ int mode = 1;
 //0 = manual
 //1 - Auto With Night mode
 //2 - Auto Without Night mode
+//3 - Away from House
 String modeline;
 String genline;
 String errline;
@@ -38,6 +40,7 @@ void setup()
   digitalWrite(start, HIGH);
   pinMode(output, INPUT_PULLUP);
   pinMode(trigger, INPUT_PULLUP);
+  pinMode(presence, INPUT_PULLUP);
   pinMode(reset, INPUT_PULLUP);
   pinMode(button_select, INPUT_PULLUP);
   pinMode(button_ok, INPUT_PULLUP);
@@ -70,7 +73,7 @@ void loop()
         if (Clock.getHour(h12, PM) < 8 || Clock.getHour(h12, PM) > 19)
         {
          lcdupdatemodeline("Auto QT*");
-                   //if its QT then execute this code
+          //if its QT then execute this code
           if (ReadPinDB(trigger) == LOW)
           {
             qtoveridemenu();
@@ -89,11 +92,18 @@ void loop()
               long startTime = millis();
               while (ReadPinDB(trigger) == LOW)
               {
+                //check if the power drops
                 if (ReadPinDB(output) == HIGH)
                 {
                   seriallog("Output Dropped");
                   errors++;
                   lcdupdateerrline("Output Drp");
+                  break;
+                }
+                //check if anything happens that would trigger a mode change
+                if (ReadPinDB(presence) == Low)
+                {
+                  seriallog("Presence Pin was activated");
                   break;
                 }
                 lcdupdategenline("Running  " + getelapsedtime(startTime));
@@ -108,7 +118,6 @@ void loop()
               StopGenerator();
             }
           }
-
         }
         break;
 
@@ -132,6 +141,12 @@ void loop()
                 lcdupdateerrline("Output Drp");
                 break;
               }
+              //check if anything happens that would trigger a mode change
+                if (ReadPinDB(presence) == Low)
+                {
+                  seriallog("Presence Pin was activated");
+                  break;
+                }
               lcdupdategenline("Running  " + getelapsedtime(startTime));
               delay(500);
             }
@@ -144,6 +159,9 @@ void loop()
             StopGenerator();
           }
         }
+        break;
+        case 3:
+        lcdupdatemodeline("Away");
         break;
     }
 
@@ -170,7 +188,23 @@ void loop()
     adminmenu();
   }
 
-  delay(200);
+//check presence sensor
+  if (ReadPinDB(presence) == LOW && mode != 3)
+  {
+    int previousmode = mode;
+    mode = 3;
+  }
+  if (ReadPinDB(presence) == HIGH && mode == 3)
+  {
+    mode = previousmode;
+  }
+
+delay(200);
+}
+
+void RunGenerator(bool isTest)
+{
+ //need to consolidate modes 1 and 2 
 }
 
 void lcdupdatemodeline(String mode)
