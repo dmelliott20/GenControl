@@ -54,7 +54,6 @@ void setup()
   lcdupdateerrline("None");
   lcdupdategenline("Idle");
   lcdupdatetestline("N/A");
- 
   //if (!TestGenerator(30)) halt("Test Fail");
 }
 
@@ -77,6 +76,7 @@ void loop()
           //if its QT then execute this code
           if (ReadPinDB(trigger) == LOW)
           {
+            modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request During QT - Waiting For Input"));
             qtoveridemenu();
           }
         }
@@ -86,6 +86,7 @@ void loop()
           lcdupdategenline("Idle");
           if (ReadPinDB(trigger) == LOW)
           {
+            modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request - Satrting Genset"));
             lcdupdatemodeline("Running");
             if (StartGenerator(false))
             {
@@ -128,6 +129,7 @@ void loop()
         lcdupdategenline("Idle");
         if (ReadPinDB(trigger) == LOW)
         {
+          modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request - Satrting Genset"));
           lcdupdatemodeline("Running");
           if (StartGenerator(false))
           {
@@ -329,12 +331,14 @@ bool StartGenerator(bool isTest)
       delay(200);
       if (ReadPinDB(output) == LOW)
       {
+        modem.sendSMS(SMS_TARGET, String("Genset Started Successful"));
         return true;
       }
     }
     lcdupdategenline("Idle");
     errors++;
     lcdupdateerrline("Start Fail");
+    modem.sendSMS(SMS_TARGET, String("Genset Failed to Start"));
     return false;
   }
   else
@@ -360,6 +364,7 @@ bool StopGenerator()
 
   }
   lcdupdategenline("Stopped");
+  modem.sendSMS(SMS_TARGET, String("Genset Stopped Successfully"));
 }
 
 bool TestGenerator(long runtime) {
@@ -380,17 +385,20 @@ bool TestGenerator(long runtime) {
       {
         StopGenerator();
         lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+        modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Failed"));
         return false;
       }
     }
     StopGenerator();
     lcdupdatetestline("Success " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+    modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Completed Successful"));
     return true;
   }
   else
   {
     StopGenerator();
     lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+    modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Failed"));
     return false;
   }
 }
@@ -431,6 +439,7 @@ void halt(String text)
 {
   StopGenerator();
   lcdupdateerrline(text);
+  modem.sendSMS(SMS_TARGET, String("Error: ")+String(text));
   lcdupdatemodeline("Halt!");
   while (1) {
     lcdupdatemodeline("Halt!");
