@@ -27,7 +27,7 @@ String modeline;
 String genline;
 String errline;
 String testline;
-
+int previousmode;
 
 void setup()
 {
@@ -54,6 +54,7 @@ void setup()
   lcdupdateerrline("None");
   lcdupdategenline("Idle");
   lcdupdatetestline("N/A");
+ 
   //if (!TestGenerator(30)) halt("Test Fail");
 }
 
@@ -101,7 +102,7 @@ void loop()
                   break;
                 }
                 //check if anything happens that would trigger a mode change
-                if (ReadPinDB(presence) == Low)
+                if (ReadPinDB(presence) == LOW)
                 {
                   seriallog("Presence Pin was activated");
                   break;
@@ -142,7 +143,7 @@ void loop()
                 break;
               }
               //check if anything happens that would trigger a mode change
-                if (ReadPinDB(presence) == Low)
+                if (ReadPinDB(presence) == LOW)
                 {
                   seriallog("Presence Pin was activated");
                   break;
@@ -177,7 +178,7 @@ void loop()
     halt("Lockout");
   }
   //auto testing of generator
-  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 17 && Clock.getMinute() == 0)
+  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 17 && Clock.getMinute() == 10)
   {
     if (!TestGenerator(300)) halt("Test Fail");
   }
@@ -191,7 +192,7 @@ void loop()
 //check presence sensor
   if (ReadPinDB(presence) == LOW && mode != 3)
   {
-    int previousmode = mode;
+    previousmode = mode;
     mode = 3;
   }
   if (ReadPinDB(presence) == HIGH && mode == 3)
