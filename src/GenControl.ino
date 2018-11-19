@@ -29,15 +29,6 @@ String errline;
 String testline;
 int previousmode;
 
-//gsm setup
-#define TINY_GSM_MODEM_SIM800
-#define SerialAT Serial1
-#define SMS_TARGET  "+447793726770"
-#include <TinyGsmClient.h>
-TinyGsm modem(SerialAT);
-
-
-
 void setup()
 {
   Serial.begin(9600);
@@ -62,21 +53,7 @@ void setup()
   digitalWrite(ignition, HIGH);
   lcdupdateerrline("None");
   lcdupdategenline("Idle");
- //set up gsm
- TinyGsmAutoBaud(SerialAT);
- seriallog("Waiting for network...");
- lcdupdatetestline("Wait for GSM");
-  if (!modem.waitForNetwork()) {
-    delay(10000);
-    return;
-  }
-
-  if (modem.isNetworkConnected()) {
-    seriallog("Network connected");
-    lcdupdatetestline("GSM OK");
-    modem.sendSMS(SMS_TARGET, String("Controller Init Message"));
-  }
-
+  lcdupdatetestline("N/A");
   //if (!TestGenerator(30)) halt("Test Fail");
 }
 
