@@ -32,6 +32,7 @@ int previousmode;
 void setup()
 {
   Serial.begin(9600);
+  Serial1.begin(9600);
   pinMode(ignition, OUTPUT);
   digitalWrite(ignition, HIGH);
   pinMode(stopgen, OUTPUT);
@@ -55,6 +56,7 @@ void setup()
   lcdupdategenline("Idle");
   lcdupdatetestline("N/A");
   //if (!TestGenerator(30)) halt("Test Fail");
+  SendSMS("Generator Control Startup OK");
 }
 
 void loop()
@@ -76,7 +78,8 @@ void loop()
           //if its QT then execute this code
           if (ReadPinDB(trigger) == LOW)
           {
-           qtoveridemenu();
+          SendSMS("Load Request During QT - Please see screen");
+          qtoveridemenu();
           }
         }
         else
@@ -328,6 +331,7 @@ bool StartGenerator(bool isTest)
       delay(200);
       if (ReadPinDB(output) == LOW)
       {
+        SendSMS("Genset Started");
         return true;
       }
     }
@@ -359,6 +363,7 @@ bool StopGenerator()
 
   }
   lcdupdategenline("Stopped");
+  SendSMS("Genset Stopped");
 }
 
 bool TestGenerator(long runtime) {
@@ -379,17 +384,24 @@ bool TestGenerator(long runtime) {
       {
         StopGenerator();
         lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+        delay(2500);
+        SendSMS("Genset Test Failed");
         return false;
       }
     }
     StopGenerator();
     lcdupdatetestline("Success " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+    delay(2500);
+    SendSMS("Genset Test Successful");
     return true;
   }
   else
   {
     StopGenerator();
     lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
+    delay(2500);
+    SendSMS("Genset Test Failed");
+    return false;
   }
 }
 
@@ -430,6 +442,7 @@ void halt(String text)
   StopGenerator();
   lcdupdateerrline(text);
   lcdupdatemodeline("Halt!");
+  SendSMS("HALT Invoked - Please see screen");
   while (1) {
     lcdupdatemodeline("Halt!");
     if (ReadPinDB(button_ok) == LOW)
@@ -680,3 +693,17 @@ bool ReadPinDB(int inputpin)
     Serial.println("Bounce Detected - re-reading");
   }
 }
+
+bool SendSMS(char* Msg)
+{
+  Serial1.write("AT+CMGF=1\r\n");
+  delay(50);
+  Serial1.write("AT+CMGS=\"+447793726770\"\r\n");
+  delay(50);
+  Serial1.write(Msg);
+  delay(50);
+  Serial1.write("\r");
+  delay(50);
+  Serial1.write((char)26);
+  delay(500);
+ }
