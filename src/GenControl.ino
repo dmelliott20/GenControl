@@ -180,7 +180,7 @@ void loop()
     halt("Lockout");
   }
   //auto testing of generator
-  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 17 && Clock.getMinute() == 10)
+  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 12 && Clock.getMinute() == 00)
   {
     if (!TestGenerator(300)) halt("Test Fail");
   }
