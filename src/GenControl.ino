@@ -32,6 +32,7 @@ int previousmode;
 void setup()
 {
   Serial.begin(9600);
+  Serial1.begin(9600);
   pinMode(ignition, OUTPUT);
   digitalWrite(ignition, HIGH);
   pinMode(stopgen, OUTPUT);
@@ -55,6 +56,7 @@ void setup()
   lcdupdategenline("Idle");
   lcdupdatetestline("N/A");
   //if (!TestGenerator(30)) halt("Test Fail");
+  SendSMS("Generator Control Startup OK");
 }
 
 void loop()
@@ -76,8 +78,8 @@ void loop()
           //if its QT then execute this code
           if (ReadPinDB(trigger) == LOW)
           {
-            modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request During QT - Waiting For Input"));
-            qtoveridemenu();
+          SendSMS("Load Request During QT - Please see screen");
+          qtoveridemenu();
           }
         }
         else
@@ -86,8 +88,7 @@ void loop()
           lcdupdategenline("Idle");
           if (ReadPinDB(trigger) == LOW)
           {
-            modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request - Satrting Genset"));
-            lcdupdatemodeline("Running");
+           lcdupdatemodeline("Running");
             if (StartGenerator(false))
             {
               seriallog("Generator Started");
@@ -129,8 +130,7 @@ void loop()
         lcdupdategenline("Idle");
         if (ReadPinDB(trigger) == LOW)
         {
-          modem.sendSMS(SMS_TARGET, String("Controller Recieved Load Request - Satrting Genset"));
-          lcdupdatemodeline("Running");
+         lcdupdatemodeline("Running");
           if (StartGenerator(false))
           {
             seriallog("Generator Started");
@@ -180,7 +180,7 @@ void loop()
     halt("Lockout");
   }
   //auto testing of generator
-  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 17 && Clock.getMinute() == 10)
+  if (Clock.getDoW() == 7 && Clock.getHour(h12, PM) == 12 && Clock.getMinute() == 00)
   {
     if (!TestGenerator(300)) halt("Test Fail");
   }
@@ -331,14 +331,13 @@ bool StartGenerator(bool isTest)
       delay(200);
       if (ReadPinDB(output) == LOW)
       {
-        modem.sendSMS(SMS_TARGET, String("Genset Started Successful"));
+        SendSMS("Genset Started");
         return true;
       }
     }
     lcdupdategenline("Idle");
     errors++;
     lcdupdateerrline("Start Fail");
-    modem.sendSMS(SMS_TARGET, String("Genset Failed to Start"));
     return false;
   }
   else
@@ -364,7 +363,7 @@ bool StopGenerator()
 
   }
   lcdupdategenline("Stopped");
-  modem.sendSMS(SMS_TARGET, String("Genset Stopped Successfully"));
+  SendSMS("Genset Stopped");
 }
 
 bool TestGenerator(long runtime) {
@@ -385,20 +384,23 @@ bool TestGenerator(long runtime) {
       {
         StopGenerator();
         lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
-        modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Failed"));
+        delay(2500);
+        SendSMS("Genset Test Failed");
         return false;
       }
     }
     StopGenerator();
     lcdupdatetestline("Success " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
-    modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Completed Successful"));
+    delay(2500);
+    SendSMS("Genset Test Successful");
     return true;
   }
   else
   {
     StopGenerator();
     lcdupdatetestline("Fail " + String(Clock.getDate()) + "/"  + String(Clock.getMonth(Century)));
-    modem.sendSMS(SMS_TARGET, String("Weekly Genset Test Failed"));
+    delay(2500);
+    SendSMS("Genset Test Failed");
     return false;
   }
 }
@@ -439,8 +441,8 @@ void halt(String text)
 {
   StopGenerator();
   lcdupdateerrline(text);
-  modem.sendSMS(SMS_TARGET, String("Error: ")+String(text));
   lcdupdatemodeline("Halt!");
+  SendSMS("HALT Invoked - Please see screen");
   while (1) {
     lcdupdatemodeline("Halt!");
     if (ReadPinDB(button_ok) == LOW)
@@ -691,3 +693,17 @@ bool ReadPinDB(int inputpin)
     Serial.println("Bounce Detected - re-reading");
   }
 }
+
+bool SendSMS(char* Msg)
+{
+  Serial1.write("AT+CMGF=1\r\n");
+  delay(50);
+  Serial1.write("AT+CMGS=\"+447793726770\"\r\n");
+  delay(50);
+  Serial1.write(Msg);
+  delay(50);
+  Serial1.write("\r");
+  delay(50);
+  Serial1.write((char)26);
+  delay(500);
+ }
